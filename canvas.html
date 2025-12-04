@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time QR Scanner</title>
+</head>
+<body>
+    <video id="video" width="600" height="400"></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <div id="result">摄像头加载...</div>
+
+    <script src="jsQR.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const resultDiv = document.getElementById('result');
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+                video.play();
+                requestAnimationFrame(tick);
+            });
+
+        function tick() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    drawRect(code.location);
+                    resultDiv.innerHTML = `QR Code: ${code.data}`;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        function drawRect(location) {
+            ctx.beginPath();
+            ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y);
+            ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y);
+            ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y);
+            ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y);
+            ctx.closePath();
+            ctx.strokeStyle = "#00FF00";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+    </script>
+</body>
+</html>

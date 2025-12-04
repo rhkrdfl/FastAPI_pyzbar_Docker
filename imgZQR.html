@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZXing-js QR & Barcode Scanner</title>
+</head>
+<body>
+    <video id="video" width="600" height="400" autoplay playsinline></video>
+    <div id="result">加载中...</div>
+
+    <script src="zQR.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const resultDiv = document.getElementById('result');
+
+        // 使用 ZXing-js
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        console.log('ZXing loaded:', codeReader);
+
+        const constraints = {
+            video: {
+                facingMode: "environment" // 使用后置摄像头
+            }
+        };
+
+        codeReader.decodeFromConstraints(constraints, video, (result, err) => {
+            if (result) {
+                console.log('Barcode found:', result);
+                resultDiv.innerHTML = `
+                    <h3>Code Found:</h3>
+                    <p><strong>Content:</strong> ${result.getText()}</p>
+                    <p><strong>Format:</strong> ${result.getBarcodeFormat()}</p>
+                `;
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error('Error:', err);
+            }
+        }).catch(err => {
+            console.error('Error starting scanner:', err);
+        });
+    </script>
+</body>
+</html>

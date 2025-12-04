@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Code Scanner (ZXing-js)</title>
+    <style>
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+            margin: 10px 0;
+        }
+        #fileInput {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept="image/*">
+    <img id="preview" style="display: none;">
+    <div id="result">选择图片以扫描...</div>
+
+    <!-- 引入 ZXing-js 库 -->
+    <script src="zQR.js"></script>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const img = new Image();
+            img.onload = function() {
+                // 显示预览
+                document.getElementById('preview').src = img.src;
+                document.getElementById('preview').style.display = 'block';
+
+                // 创建解码器
+                const codeReader = new ZXing.BrowserMultiFormatReader();
+
+                try {
+                    // 使用 decodeFromImageElement 方法
+                    codeReader.decodeFromImageElement(img)
+                        .then(result => {
+                            if (result) {
+                                document.getElementById('result').textContent = 
+                                    'QR Code: ' + result.getText();
+                            } else {
+                                document.getElementById('result').textContent = 
+                                    'No QR code found';
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('result').textContent = 
+                                'Error: ' + err.message;
+                        });
+                } catch (err) {
+                    document.getElementById('result').textContent = 
+                        'Decode Error: ' + err.message;
+                }
+            };
+
+            img.onerror = function() {
+                document.getElementById('result').textContent = 'Image load failed';
+            };
+
+            img.src = URL.createObjectURL(file);
+        });
+    </script>
+</body>
+</html>

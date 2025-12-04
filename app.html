@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile QR Scanner</title>
+    <style>
+        #video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+        #canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" playsinline autoplay muted></video>
+    <canvas id="canvas"></canvas>
+    <div id="result">Scanning...</div>
+
+    <script src="jsQR.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const resultDiv = document.getElementById('result');
+
+        // 移动端优化的摄像头访问
+        const constraints = {
+            video: {
+                facingMode: "environment", // 使用后置摄像头
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                setTimeout(() => {
+                    startScanning();
+                }, 500); // 等待视频流稳定
+            })
+            .catch(err => {
+                console.error('摄像头访问失败:', err);
+                resultDiv.textContent = '无法访问摄像头，请检查权限设置';
+            });
+
+        function startScanning() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            function scanFrame() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    // 在 Canvas 上绘制视频帧
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // 获取图像数据
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // 解码 QR 码
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        // 找到 QR 码，显示结果
+                        resultDiv.innerHTML = `
+                            <h3>QR Code Found:</h3>
+                            <p>${code.data}</p>
+                            <button onclick="location.reload()">Scan Again</button>
+                        `;
+                        
+                        // 可选：停止视频流
+                        const tracks = video.srcObject.getTracks();
+                        tracks.forEach(track => track.stop());
+                        
+                        return;
+                    }
+                }
+                
+                // 继续扫描下一帧
+                requestAnimationFrame(scanFrame);
+            }
+            
+            requestAnimationFrame(scanFrame);
+        }
+    </script>
+</body>
+</html>
